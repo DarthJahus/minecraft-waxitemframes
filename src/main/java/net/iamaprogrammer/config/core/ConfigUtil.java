@@ -2,8 +2,8 @@ package net.iamaprogrammer.config.core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.fabricmc.loader.api.FabricLoader;
 import net.iamaprogrammer.WaxItemFrames;
+import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -14,10 +14,10 @@ import java.nio.file.Path;
 
 public class ConfigUtil {
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    public static final Path CONFIG_PATH = FabricLoader.getInstance().getConfigDir();
+    public static final Path CONFIG_PATH = FMLPaths.CONFIGDIR.get();
 
     public static <C extends Config> boolean save(C config) {
-        Path path = Path.of(ConfigUtil.CONFIG_PATH.toString(), config.fileName()+".json");
+        Path path = Path.of(ConfigUtil.CONFIG_PATH.toString(), config.fileName() + ".json");
         if (!Files.exists(path)) {
             try {
                 createFileWithDirectories(path, config);
@@ -35,6 +35,7 @@ public class ConfigUtil {
         }
         return false;
     }
+
     public static <C extends Config> C load(Path configPath, Class<C> config) {
         try {
             return GSON.fromJson(new FileReader(configPath.toString()), config);
@@ -47,15 +48,16 @@ public class ConfigUtil {
         Files.createDirectories(path.getParent());
         createFile(path, config);
     }
+
     public static <C extends Config> void createFile(Path path, C config) throws IOException {
         String data = GSON.toJson(config != null ? config : "");
-        FileWriter fooWriter = new FileWriter(path.toFile(), false); // true to append
-        fooWriter.write(data);
-        fooWriter.close();
+        try (FileWriter fooWriter = new FileWriter(path.toFile(), false)) {
+            fooWriter.write(data);
+        }
     }
 
     public static <C extends Config> Path findOrCreateConfig(C defaultConfig) {
-        Path path = Path.of(ConfigUtil.CONFIG_PATH.toString(), defaultConfig.fileName()+".json");
+        Path path = Path.of(ConfigUtil.CONFIG_PATH.toString(), defaultConfig.fileName() + ".json");
         if (!Files.exists(path)) {
             try {
                 ConfigUtil.createFileWithDirectories(path, defaultConfig);
