@@ -2,8 +2,7 @@ package net.iamaprogrammer;
 
 import net.iamaprogrammer.config.ModConfig;
 import net.iamaprogrammer.config.core.ConfigRegistry;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.common.Mod;
+import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,10 +12,10 @@ public class WaxItemFrames {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 	public static ModConfig CONFIG;
 
-	public WaxItemFrames(IEventBus modBus) {
+	public WaxItemFrames() {
 		ModConfig defaultConfig = new ModConfig();
 		defaultConfig.shouldFixItemFrameWhenWaxed(false);
 		CONFIG = new ConfigRegistry<>(defaultConfig, ModConfig.class).register();
-		LOGGER.info("Wax Item Frames (NeoForge) loaded");
+		LOGGER.info("Wax Item Frames (Forge) loaded");
 	}
 }

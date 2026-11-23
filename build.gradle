@@ -1,8 +1,8 @@
 plugins {
-	id 'java-library'
-	id 'maven-publish'
-	id 'net.neoforged.moddev' version '2.0.148'
+	id 'java'
 	id 'idea'
+	id 'eclipse'
+	id 'net.minecraftforge.gradle' version '[7.0.17,8)'
 }
 
 version = mod_version
@@ -14,35 +14,39 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
-neoForge {
-	version = project.neo_version
-
+minecraft {
 	runs {
-		client {
-			client()
-		}
-		server {
-			server()
-			programArgument '--nogui'
-		}
 		configureEach {
-			systemProperty 'forge.logging.markers', 'REGISTRIES'
-			logLevel = org.slf4j.event.Level.DEBUG
+			workingDir = layout.projectDirectory.dir('run')
+			systemProperty 'eventbus.api.strictRuntimeChecks', 'true'
+			args "--mixin.config=${mod_id}.mixins.json"
 		}
-	}
-
-	mods {
-		"${mod_id}" {
-			sourceSet(sourceSets.main)
+		register('client')
+		register('server') {
+			args '--nogui'
 		}
 	}
 }
 
-var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+repositories {
+	minecraft.mavenizer(it)
+	maven fg.forgeMaven
+	maven fg.minecraftLibsMaven
+	mavenCentral()
+}
+
+dependencies {
+	implementation minecraft.dependency("net.minecraftforge:forge:${minecraft_version}-${forge_version}")
+	annotationProcessor 'net.minecraftforge:eventbus-validator:7.0.6'
+}
+
+tasks.named('processResources', ProcessResources).configure {
 	var replaceProperties = [
 			minecraft_version      : minecraft_version,
-			minecraft_version_range: minecraft_version_range,
-			neo_version            : neo_version,
+			minecraft_version_range: "[${minecraft_version},)",
+			forge_version          : forge_version,
+			forge_version_range    : forge_version_range,
+			loader_version_range   : loader_version_range,
 			mod_id                 : mod_id,
 			mod_name               : mod_name,
 			mod_license            : mod_license,
@@ -51,25 +55,29 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
 			mod_description        : mod_description
 	]
 	inputs.properties replaceProperties
-	expand replaceProperties
-	from 'src/main/templates'
-	into 'build/generated/sources/modMetadata'
-}
-sourceSets.main.resources.srcDir generateModMetadata
-neoForge.ideSyncTask generateModMetadata
-
-tasks.named('jar', Jar).configure {
-	archiveClassifier.set('neoforge')
-	manifest {
-		attributes([
-				'MixinConfigs': "${mod_id}.mixins.json"
-		])
+	filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+		expand replaceProperties
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
 	options.encoding = 'UTF-8'
 	options.release = 25
+}
+
+tasks.named('jar', Jar).configure {
+	archiveClassifier.set('forge')
+	manifest {
+		attributes([
+				'Specification-Title'     : mod_id,
+				'Specification-Vendor'    : mod_authors,
+				'Specification-Version'   : '1',
+				'Implementation-Title'    : project.name,
+				'Implementation-Version'  : project.jar.archiveVersion,
+				'Implementation-Vendor'   : mod_authors,
+				'MixinConfigs'            : "${mod_id}.mixins.json"
+		])
+	}
 }
 
 idea {
